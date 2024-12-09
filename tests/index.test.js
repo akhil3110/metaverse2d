@@ -16,14 +16,14 @@ describe("Authentication",  () =>{
             password,
             type: "admin"
         })
-        expect(response.statusCode).toBe(200)
+        expect(response.status).toBe(200)
 
         const Updatedresponse = await axios.post(`${BACKEND_URL}/api/v1/signup`, {
             username,
             password,
             type: "admin"
         })
-        expect(Updatedresponse.statusCode).toBe(400)
+        expect(Updatedresponse.status).toBe(400)
      })
     
     test("SignUp request fails if the username is empty", async() =>{
@@ -34,7 +34,7 @@ describe("Authentication",  () =>{
             password
         })
 
-        expect(res.statusCode).toBe(400)
+        expect(res.status).toBe(400)
 
     })
 
@@ -54,7 +54,7 @@ describe("Authentication",  () =>{
             password,
         })
 
-        expect(response.statusCode).toBe(200)
+        expect(response.status).toBe(200)
         expect(response.body.token).toBeDefined()
     })
 
@@ -74,7 +74,7 @@ describe("Authentication",  () =>{
             password,
         })
 
-        expect(response.statusCode).toBe(403)
+        expect(response.status).toBe(403)
     })
 })
 
@@ -117,7 +117,7 @@ describe("User Metadata endpoints", () =>{
             }
         })
 
-        expect(response.statusCode).toBe(400)
+        expect(response.status).toBe(400)
     })
 
     test("User Can update their metadata with right avaterId", async() =>{
@@ -129,7 +129,7 @@ describe("User Metadata endpoints", () =>{
             }
         })
 
-        expect(response.statusCode).toBe(200)
+        expect(response.status).toBe(200)
     })
 
     test("User is not able to update the metadata if the auth header is not present", async() =>{
@@ -137,7 +137,7 @@ describe("User Metadata endpoints", () =>{
             avatarId
         })
 
-        expect(response.statusCode).toBe(403)
+        expect(response.status).toBe(403)
     })
 })
 
@@ -329,7 +329,7 @@ describe("Space Information", () =>{
             }
         })
 
-        expect(response.statusCode).toBe(400)
+        expect(response.status).toBe(400)
     })
 
     test("User is not  able to delete a space that doesn't exist", async() =>{
@@ -339,7 +339,7 @@ describe("Space Information", () =>{
             }
         })
 
-        expect(response.statusCode).toBe(400)
+        expect(response.status).toBe(400)
     })
 
     test("User is able to delete a space that does exist", async () => {
@@ -360,4 +360,55 @@ describe("Space Information", () =>{
 
        expect(deleteReponse.status).toBe(200)
     })
+
+    test("User should not be able to delete space created by anoher user" , async() =>{
+        const response = await axios.post(`${BACKEND_URL}/api/v1/space`, {
+            "name": "Test",
+            "dimensions": "100x200",
+        }, {
+            headers: {
+                authorization: `Bearer ${userToken}`
+            }
+        })
+
+        const deleteReponse = await axios.delete(`${BACKEND_URL}/api/v1/space/${response.data.spaceId}`, {
+            headers: {
+                authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(deleteReponse.status).toBe(400)
+    })
+
+    test("Admin has no spaces initially", async () => {
+        const response = await axios.get(`${BACKEND_URL}/api/v1/space/all`, {
+            headers: {
+                authorization: `Bearer ${adminToken}`
+            }
+        });
+        expect(response.data.spaces.length).toBe(0)
+    })
+
+    test("Admin has gets once space after", async () => {
+        const spaceCreateReponse = await axios.post(`${BACKEND_URL}/api/v1/space`, {
+            "name": "Test",
+            "dimensions": "100x200",
+        }, {
+            headers: {
+                authorization: `Bearer ${adminToken}`
+            }
+        });
+        console.log('jhflksdjflksdfjlksdfj')
+        console.log(spaceCreateReponse.data)
+        const response = await axios.get(`${BACKEND_URL}/api/v1/space/all`, {
+            headers: {
+                authorization: `Bearer ${adminToken}`
+            }
+        });
+        const filteredSpace = response.data.spaces.find(x => x.id == spaceCreateReponse.data.spaceId)
+        expect(response.data.spaces.length).toBe(1)
+        expect(filteredSpace).toBeDefined()
+
+    })
 })
+
